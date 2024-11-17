@@ -1,0 +1,51 @@
+volumes:
+  ddlvol:
+
+networks:
+  ddl:
+    driver: bridge
+
+services:
+  web:
+    depends_on:
+      - db
+    volumes:
+      - ./www/:/var/www/html
+    networks:
+      - ddl
+    ports:
+      - "${DDL_WEB_PORT}:80"
+    user: ${DDL_USER}
+    container_name: core_mauidy
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile.be
+    env_file:
+      - ./www/.env
+  
+
+  db:
+    networks:
+      - ddl
+    volumes:
+      - ddlvol:/var/lib/mysql
+    ports:
+      - "${DDL_DB_PORT}:3306"
+    image: mysql:8.0
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DDL_DB_PASSWORD}
+      MYSQL_DATABASE: ${DDL_DB_DATABASE}
+      MYSQL_ALLOW_EMPTY_PASSWORD: yes
+  
+  phpmyadmin:
+      networks:
+        - ddl
+      image: phpmyadmin
+      restart: always
+      ports:
+        - ${DDL_DB_PHPMYADMIN_PORT}:80
+      environment:
+        - PMA_ARBITRARY=1
+        - UPLOAD_LIMIT=300M
